@@ -1,0 +1,54 @@
+# Hydration free energy of a sodium ion 
+
+These scripts allow to run alchemical free energy calculations for a sodium ion in a water (TIP3P) box.
+The scripts have been tested on a Ubuntu 14.04 workstation, with CUDA 7.5 and OpenMM 7.0. 
+With the current input files you can run a simulation on a box of 25 A edge and 10 A cutoff.
+
+# Folders
+
+scripts : here you can find the script to run the simulations and compute Rocklin corrections. 
+       
+	  discharging.py -->  run a discharging free energy calculation 
+          vanishing.py   -->  run a vanishing free energy calculation 
+          corrections.py -->  run Rocklin correction scheme 
+
+In each script you can find details about how they work. 
+
+# Examples
+
+To run a simulation you can proceed in this way:
+
+```
+mkdir run001
+cd run001
+mkdir input
+mkdir output 
+cp ../inputfiles/*  input/.
+cd output
+cp ../../scripts/discharging.py  . 
+
+python discharging.py  
+```
+
+This will run 10 equidistand lambda windows calculations, 2 ns long, with SHAKE constraints
+on water molecules, 10 A cutoff and PME electrostatics.
+
+Once the simulation has run,  the discharging free energy change will be estimated with MBAR and 
+the results will be save in a file ```freenrg-MBAR.dat```.
+
+To run the Rocklin corrections: 
+
+```
+cd lambda-0.00
+
+cp ../../input/* . 
+cp SYSTEM.top  SYSTEM.prmtop
+
+cp ../../../scripts/corrections.py . 
+
+python corrections.py trajectory.dcd  SYSTEM.prmtop 
+
+```
+
+This script will compute average discharging free energy correction terms every 100 frames of the trajectory.
+The script invokes APBS for the integral calculations. The APBS version used was 1.4.1

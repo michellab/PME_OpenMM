@@ -1,0 +1,5 @@
+# Files
+
+SYSTEM.top : AMBER topolgoy for a sodium ion in a water box of 25 A edge
+SYSTEM.crd : coordinates file
+SYSTEM.pdb : pdb of the system

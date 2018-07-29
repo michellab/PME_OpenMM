@@ -1,0 +1,4 @@
+# Files
+
+Scripts to run discharging and free energy change calculations. 
+corrections.py  computes Rocklin correction terms

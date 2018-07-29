@@ -1,0 +1,109 @@
+# Charging free energy change for OA-O1 host guest system
+
+The files provided here allows you to compute the alchemical discharging step in complex and 
+solvated phase for the OA-O1 host guest system.
+These scripts have been tested on our local cluster, using CUDA 7.5 and OpenMM 7.0.1.
+To run the OpenMM Python modules on the cluster I passed through Sire, exploiting the internal 
+installation of OpenMM.
+
+
+The main script used for these calculations are in the folder "scripts":
+bound_dis.py  --> discharging free energy calculation in the bound phase
+free_dis.py   --> discharging free energy calculation in the free  phase
+
+
+
+# RUN OpenMM PME simulations on the cluster
+
+I have tested the OpenMM PME script using sire 2018.1.0, using cuda 7.5 and  openmm 7.0.1 (conda install in Sire)
+The submission script (e.g. discharge.sh in big/10A/bound/run001/discharge.sh) laods cuda 7.5 and use 
+a local install of Sire.
+It would be impossible to run the bound_dis.py or free_dis.py on the cluster normally, without modifying some 
+OpenMM python script present in sire.app.  These scripts are located in the scripts folder and should be collacated here:
+
+openmm.py --> ~/sire.app/pkgs/openmm-7.0.1-py35_0/lib/python3.5/site-packages/simtk/openmm/.
+dcdfile.py -->  ~/sire.app/pkgs/openmm-7.0.1-py35_0/lib/python3.5/site-packages/simtk/openmm/app/.
+simulation.py -->  ~/sire.app/pkgs/openmm-7.0.1-py35_0/lib/python3.5/site-packages/simtk/openmm/app/.
+
+The main modification is in simulation.py, lines  199-200
+In this line  I added this line:
+
+stepsToGo = int(stepsToGo)
+
+in order to have the number of MD steps as a integer. I don't know why, but when the code is running the MD
+the last step is considered as a double and it breaks the code. Thus I added this modification.
+
+Secondly, the bound_dis.py and free_dis.py  scripts run differently from the usual case.
+From line 89 the MD routine is called. We are doing  "niterations" (100) with "nsteps" (80000) of MD
+For each iteration the script save the current system information:
+    alchemical_simulation.step(int(nsteps))
+    ofile_name= lambda_position_folder + "%d.pos" % iteration
+    #create this file and use the
+    alchemical_simulation.saveState(ofile_name)
+in a ".pos" file, using the "saveState" option of OpenMM.
+
+Once all the iteration are run, line 125, the script copy a further script "openmm_ext.py" and create 
+a sbatch file to submit this script to the cluster.
+"openmm_ext.py"  loads all the .pos files and computes the reduced potential energy for each thermodynamic 
+state writing a simfile.csv.
+The simfile.csv is then used with mbar to compute the free energy change
+
+
+
+# Folders
+
+scripts : here you can find the script to run the simulations and compute Rocklin corrections. 
+       
+            bound_dis.py -->  run a discharging free energy calculation  in the bound phase
+            free_dis.py   -->  run a discharging free energy calculation  in the solvated phase
+            run_bound_discharge.sh --> slurm submission script for the cluster, to run the bound discharging calculation  
+            run_free_discharge.sh --> slurm submission script for the cluster, to run the free discharging calculation
+
+            openmm_ext.py --> script to write the simfile.csv  for each lambda window
+            bound_corrections.py -->  run Rocklin correction scheme  for the bound phase 
+            free_corrections.py --> run Rocklin correction scheme for the solvated phase
+            mbar_analysis.py --> script to run MBAR on the final simulation result
+
+inputfiles: input file to run the bound and solvated phase of OA-O1:
+            bound/input: topology and coordinate files of OA-O1      
+            free/input: topology and coordinate files of OA-O1
+
+
+# Examples
+
+To run a simulation you can proceed in this way:
+
+```
+mkdir  bound_output
+cd bound_output
+cp -r ../inputfiles/bound/input . 
+mkdir output
+cp ../scripts/run_bound_discharge.sh . 
+cd output
+cp ../../scripts/bound_dis.py  discharging.py  
+cp ../../scripts/openmm_ext.py  . 
+sbatch ../run_bound_discharge.sh  
+```
+
+This will run a 16 ns long simulation for 11 equidistant lambda windows. 
+
+To analyse the results ( in output ):
+
+``` 
+cp ../../scripts/mbar_analysis.py . 
+python mbar_analysis.py 
+```
+
+This will create a ```freenrg-MBAR.dat``` file with the discharging free energy change 
+
+To run Rocklin corrections -- this script can be run on a workstation
+
+```
+cd lambda-0.00
+cp ../../../scripts/bound_corrections.py . 
+cp ../../input/* . 
+cp SYSTEM.top SYSTEM.prmtop
+python bound_corrections.py SYSTEM.prmtop SYSTEM.crd trajectory.dcd 100
+```
+
+where 100 is the step frame.

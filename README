@@ -1,0 +1,15 @@
+# Charging free energy corrections with OpenMM PME
+
+In this repository you can find tests and scripts used to compute the Rocklin 
+charging free energy correction terms under PME electrostatic calculations 
+
+# Folders
+
+sodium_ion : input files for running a simulation on a sodium ion in a water box (25 A edge). 
+             The scripts provided allow the computation of discharging and vanishing free
+             energies on a Ubuntu 14.04 workstation, CUDA 7.5 and OpenMM 7.0             
+
+
+hostguest : input files to run a host-guest simulation in OpenMM. The input files are for the 
+	    SAMPL4 OA-O1 system. These scripts have been tested on our local cluster, using 
+            Sire 2017.3.0, OpenMM 7.0.1 and CUDA 7.5 
